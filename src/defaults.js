@@ -1,5 +1,5 @@
 export const DEFAULTS = {
-  site: { logo: "Dr. ARUN", clinic: "DrArun's Ortho & Sports Injury Clinic", doctor: "Dr. Arun GR", city: "Mysuru", noindex: true },
+  site: { logo: "Dr. ARUN", clinic: "DrArun's Ortho & Sports Injury Clinic", doctor: "Dr. Arun GR", city: "Mysuru", noindex: false, url: "https://ortho.outpulse.company" },
   contact: {
     phone: "+91 95919 98828", whatsapp: "918123459128", email: "drgrarun@gmail.com",
     instagram: "https://www.instagram.com/arunsorthoclinic/",

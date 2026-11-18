@@ -9,13 +9,41 @@ export function mu(c, key) { const m = c.media[key] || {}; return m.k ? `/media/
 const two = (a, b) => `${esc(a)}<br><em>${esc(b)}</em>`;
 function splitTwo(t) { const w = String(t).split(" "); if (w.length < 2) return esc(t); let best = 1, bd = 1e9; for (let i = 1; i < w.length; i++) { const d = Math.abs(w.slice(0, i).join(" ").length - w.slice(i).join(" ").length); if (d < bd) { bd = d; best = i; } } return two(w.slice(0, best).join(" "), w.slice(best).join(" ")); }
 
+let CUR = { path: "/", blog: null };
+const baseOf = (c) => String(c.site.url || "https://ortho.outpulse.company").replace(/\/$/, "");
+function hoursSpec(h) {
+  const out = []; const m = String(h || "").match(/(\d{1,2}:\d{2}\s*[ap]m)\s*[–-]\s*(\d{1,2}:\d{2}\s*[ap]m)\s*&\s*(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/i);
+  const t = (x) => { const r = /(\d{1,2}):(\d{2})\s*([ap]m)?/i.exec(x); let H = +r[1]; if (r[3]) { if (/pm/i.test(r[3]) && H < 12) H += 12; if (/am/i.test(r[3]) && H === 12) H = 0; } return String(H).padStart(2, "0") + ":" + r[2]; };
+  if (m) { const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]; out.push({ "@type": "OpeningHoursSpecification", dayOfWeek: days, opens: t(m[1]), closes: t(m[2]) }); const e = t(m[3].length < 6 ? m[3] + " pm" : m[3]); out.push({ "@type": "OpeningHoursSpecification", dayOfWeek: days, opens: e, closes: t(m[4].length < 6 ? m[4] + " pm" : m[4]) }); }
+  return out;
+}
+function schema(c, title, desc) {
+  const B = baseOf(c), url = B + CUR.path, lines = String(c.contact.address).split("\n").map((x) => x.trim()).filter(Boolean);
+  const pc = (/(\d{6})/.exec(c.contact.address) || [])[1];
+  const clinic = { "@type": ["MedicalClinic", "LocalBusiness"], "@id": B + "/#clinic", name: c.site.clinic, url: B + "/", telephone: telOf(c.contact.phone), email: c.contact.email, image: B + mu(c, "photo"), logo: B + "/assets/logo.webp", medicalSpecialty: "Orthopedic", description: c.hero.sub, sameAs: [c.contact.instagram].filter(Boolean), openingHoursSpecification: hoursSpec(c.contact.hours), address: { "@type": "PostalAddress", streetAddress: lines.slice(0, -1).join(", "), addressLocality: c.site.city, addressRegion: "Karnataka", postalCode: pc, addressCountry: "IN" }, areaServed: c.site.city, founder: { "@id": B + "/#doctor" } };
+  const doc = { "@type": ["Physician", "Person"], "@id": B + "/#doctor", name: c.site.doctor, medicalSpecialty: "Orthopedic", jobTitle: "Orthopaedic and Sports Injury Surgeon", worksFor: { "@id": B + "/#clinic" }, url: B + "/about/", hasCredential: (c.surgeon.credentials || []).map((x) => ({ "@type": "EducationalOccupationalCredential", name: x })) };
+  const g = [clinic, doc, { "@type": "WebSite", "@id": B + "/#site", url: B + "/", name: c.site.clinic, publisher: { "@id": B + "/#clinic" }, inLanguage: "en-IN" }];
+  if (CUR.path !== "/") {
+    const items = [{ "@type": "ListItem", position: 1, name: "Home", item: B + "/" }];
+    if (CUR.blog) items.push({ "@type": "ListItem", position: 2, name: "Blogs", item: B + "/blogs/" });
+    items.push({ "@type": "ListItem", position: items.length + 1, name: title.split(" | ")[0], item: url });
+    g.push({ "@type": "BreadcrumbList", itemListElement: items });
+  }
+  if (CUR.blog) g.push({ "@type": "BlogPosting", headline: CUR.blog.title, description: CUR.blog.excerpt, mainEntityOfPage: url, author: { "@id": B + "/#doctor" }, publisher: { "@id": B + "/#clinic" }, image: B + mu(c, "photo"), inLanguage: "en-IN", dateModified: CUR.blog.date || undefined, datePublished: CUR.blog.date || undefined });
+  return '<script type="application/ld+json">' + JSON.stringify({ "@context": "https://schema.org", "@graph": g }).replace(/</g, "\\u003c") + "</script>";
+}
+
 function shell(c, v, title, desc, main, opts) {
   opts = opts || {};
   const tel = telOf(c.contact.phone), book = c.contact.bookUrl || "/contact/", clinic = esc(c.site.clinic);
-  const robots = c.site.noindex ? '<meta name="robots" content="noindex,nofollow">' : "";
+  const B = baseOf(c), canon = B + CUR.path, ogimg = B + mu(c, "heroPoster");
+  const robots = c.site.noindex ? '<meta name="robots" content="noindex,nofollow">' : '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">';
+  const seo = `<link rel="canonical" href="${canon}"><link rel="icon" href="/assets/logo.webp" type="image/webp"><meta name="geo.region" content="IN-KA"><meta name="geo.placename" content="${esc(c.site.city)}"><meta name="author" content="${esc(c.site.doctor)}">
+<meta property="og:type" content="${CUR.blog ? "article" : "website"}"><meta property="og:site_name" content="${clinic}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${canon}"><meta property="og:image" content="${ogimg}"><meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${ogimg}">` + schema(c, title, desc);
   const preload = opts.home ? `<link rel="preload" as="image" href="${mu(c, "heroPoster")}">` : "";
   const fonts = "https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Gilda+Display&display=swap";
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${robots}<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#b79144">
+  return `<!DOCTYPE html><html lang="en-IN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${robots}<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#b79144">${seo}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>${preload}
 <link rel="stylesheet" href="/assets/site.css?v=${v}">
 <link href="${fonts}" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="${fonts}" rel="stylesheet"></noscript>
@@ -51,7 +79,7 @@ export function home(c, v) {
 <section class="alt"><div class="wrap two"><div><h2>AR Seva<br><em>Foundation</em></h2><p>${esc(c.seva.text)}</p><ul class="links left">${li(c.seva.points)}</ul><p><a class="btn" href="/ar-seva-foundation/">Learn More</a></p></div>${img("AR Seva Foundation")}</div></section>
 <section class="press-sec"><div class="wrap"><h2>Our<br><em>Blog</em></h2><div class="cards two">${c.blogs.slice(0, 4).map((b) => `<div class="card"><small>${esc(b.category)}</small><h3>${A("/" + esc(b.slug) + "/", esc(b.title))}</h3></div>`).join("")}</div><p><a href="/blogs/">View all posts →</a></p></div></section>
 <section class="closing" id="appointment"><div class="wrap"><h2>Visit Dr. Arun's<br><em>Ortho &amp; Sports Injury Clinic</em></h2><p class="btns"><a class="btn" href="tel:${tel}">${ph}</a><a class="btn ghost" href="${book}">Book an Appointment</a></p><p>${esc(String(c.contact.hours).split("\n")[0])}</p></div></section>`;
-  return shell(c, v, `${c.site.clinic} | ${c.site.city}`, `${c.site.clinic}, ${c.site.city}. ${c.hero.sub}`, main, { home: true });
+  return shell(c, v, `Orthopaedic Surgeon in ${c.site.city} | ${c.site.doctor} – Joint Replacement & Sports Injury`, `${c.site.doctor} is an orthopaedic and sports injury surgeon in ${c.site.city}. Robotic joint replacement, ACL reconstruction, arthroscopy and fracture care at ${c.site.clinic}. Call ${c.contact.phone}.`, main, { home: true });
 }
 
 export function inner(c, v, title, crumbs, body, lead, side) {
@@ -61,10 +89,12 @@ export function inner(c, v, title, crumbs, body, lead, side) {
   const main = `<main><section class="page-hero"><div class="wrap"><div class="crumbs">${crumb}</div><h1>${splitTwo(title)}</h1><p class="lead">${esc(lead)}</p><a class="btn" href="${book}">Book an Appointment</a></div></section>
 <section class="page-body"><div class="wrap"><div class="grid"><article>${body}</article><aside class="side">${sideBox}<div class="box"><h3>Need help?</h3><p>Call <a href="tel:${tel}">${esc(c.contact.phone)}</a> or visit us.</p><p>${br(c.contact.hours)}</p><a class="btn" href="${book}">Contact us</a></div></aside></div></div></section>
 <section class="closing2"><div class="wrap"><h2>Ready to take the next step?</h2><a class="btn" href="${book}">Book an Appointment</a></div></section></main>`;
-  return shell(c, v, `${title} | ${c.site.clinic}`, lead, main);
+  return shell(c, v, `${title} | ${c.site.doctor}, ${c.site.city}`, `${lead} ${c.site.clinic}, ${c.site.city}.`.slice(0, 300), main);
 }
 
+export function paths(c) { return ["/", "/about/", "/services/", "/blogs/", "/contact/", "/ar-seva-foundation/"].concat(c.blogs.map((b) => "/" + b.slug + "/")); }
 export function page(c, v, path) {
+  CUR = { path, blog: c.blogs.find((x) => "/" + x.slug + "/" === path) || null };
   const tel = telOf(c.contact.phone);
   const NAVSIDE = { title: "Explore", items: NAVL };
   const li = (a) => "<ul>" + a.map((x) => `<li>${esc(x)}</li>`).join("") + "</ul>";
@@ -80,5 +110,6 @@ export function page(c, v, path) {
 }
 
 export function notFound(c, v) {
+  CUR = { path: "/404/", blog: null };
   return inner(c, v, "Page not found", [], '<p>The page you are looking for does not exist.</p><p><a class="btn" href="/">Back to home</a></p>', "Let us help you find what you need.", { title: "Explore", items: NAVL });
 }
