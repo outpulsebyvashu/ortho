@@ -92,9 +92,16 @@ export function inner(c, v, title, crumbs, body, lead, side) {
   const main = `<main><section class="page-hero"><div class="wrap"><div class="crumbs">${crumb}</div><h1>${splitTwo(title)}</h1><p class="lead">${esc(lead)}</p><a class="btn" href="${book}">Book an Appointment</a></div></section>
 <section class="page-body"><div class="wrap"><div class="grid"><article>${body}</article><aside class="side">${sideBox}<div class="box"><h3>Need help?</h3><p>Call <a href="tel:${tel}">${esc(c.contact.phone)}</a> or visit us.</p><p>${br(c.contact.hours)}</p><a class="btn" href="${book}">Contact us</a></div></aside></div></div></section>
 <section class="closing2"><div class="wrap"><h2>Ready to take the next step?</h2><a class="btn" href="${book}">Book an Appointment</a></div></section></main>`;
-  return shell(c, v, `${title} | Orthopedic Surgeon in Mysore`, `${lead} ${c.site.clinic}, ${c.site.city}.`.slice(0, 300), main);
+  const m = META[CUR.path]; const t = m ? m[0] : CUR.blog ? `${title} | Dr. Arun GR, Mysore` : `${title} | Orthopedic Surgeon in Mysore`; const d = m ? m[1] : (CUR.blog && CUR.blog.excerpt ? CUR.blog.excerpt : lead).slice(0, 158); return shell(c, v, t, d, main);
 }
 
+const META = {
+  "/about/": ["About Dr. Arun GR | Orthopedic Surgeon in Mysore", "Meet Dr. Arun GR, fellowship-trained orthopedic and sports injury surgeon in Mysore (Mysuru). Qualifications, experience and approach to joint care."],
+  "/services/": ["Orthopedic Treatments in Mysore | Joint Replacement, ACL, Arthroscopy", "Knee and hip replacement, ACL reconstruction, shoulder arthroscopy, fracture care and sports injury treatment in Vijayanagar, Mysore. Book a consultation."],
+  "/blogs/": ["Orthopedic Health Blog | Dr. Arun GR, Mysore", "Plain-language articles on knee and hip replacement, ACL injuries, sports injuries and recovery from an orthopedic surgeon in Mysore."],
+  "/contact/": ["Contact & Book Appointment | Orthopedic Clinic Vijayanagar, Mysore", "Dr. Arun's Ortho & Sports Injury Clinic, Kalidasa Road, Vijayanagar 1st Stage, Mysuru 570017. Call, WhatsApp or book an appointment. Mon–Sat."],
+  "/ar-seva-foundation/": ["AR Seva Foundation | Orthopedic Care for All in Mysore", "AR Seva Foundation by Dr. Arun GR makes orthopedic care reachable for people in Mysuru who need support. Learn how to get help or contribute."]
+};
 export function paths(c) { return ["/", "/about/", "/services/", "/blogs/", "/contact/", "/ar-seva-foundation/"].concat(c.blogs.map((b) => "/" + b.slug + "/")); }
 export function page(c, v, path) {
   CUR = { path, blog: c.blogs.find((x) => "/" + x.slug + "/" === path) || null };
