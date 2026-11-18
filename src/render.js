@@ -47,7 +47,7 @@ function shell(c, v, title, desc, main, opts) {
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${ogimg}">` + schema(c, title, desc);
   const preload = opts.home ? `<link rel="preload" as="image" href="${mu(c, "heroPoster")}">` : "";
   const fonts = "https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Gilda+Display&display=swap";
-  return `<!DOCTYPE html><html lang="en-IN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${robots}<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#b79144">${seo}
+  return `<!DOCTYPE html><html lang="en-IN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${robots}<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta name="color-scheme" content="only light"><meta name="theme-color" content="#b79144">${seo}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>${preload}
 <link rel="stylesheet" href="/assets/site.css?v=${v}">
 <link href="${fonts}" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="${fonts}" rel="stylesheet"></noscript>

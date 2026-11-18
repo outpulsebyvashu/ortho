@@ -1,3 +1,4 @@
+:root{color-scheme:only light}
 :root{--gold:#b79144;--gold-d:#8a6a2a;--ink:#1c2430;--mut:#5b6573;--bg:#f6f4ef;--card:#fff;--line:#e4dfd3;--ok:#1f7a4d;--err:#b42318;--r:14px}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}

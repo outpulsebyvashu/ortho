@@ -117,7 +117,7 @@ async function serveMedia(req, env, url, ctx) {
   return res;
 }
 
-const ADMIN_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Site admin</title><link rel="stylesheet" href="/assets/admin.css"></head><body><div id="root"></div><script src="/assets/admin.js" defer></script></body></html>`;
+const ADMIN_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="color-scheme" content="only light"><title>Site admin</title><link rel="stylesheet" href="/assets/admin.css"></head><body><div id="root"></div><script src="/assets/admin.js" defer></script></body></html>`;
 
 export default {
   async fetch(req, env, ctx) {
