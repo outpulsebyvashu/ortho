@@ -32,6 +32,7 @@ function schema(c, title, desc) {
     items.push({ "@type": "ListItem", position: items.length + 1, name: title.split(" | ")[0], item: url });
     g.push({ "@type": "BreadcrumbList", itemListElement: items });
   }
+  if (CUR.path === "/" || CUR.path === "/contact/") g.push({ "@type": "FAQPage", mainEntity: faqs(c).map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) });
   if (CUR.blog) g.push({ "@type": "BlogPosting", headline: CUR.blog.title, description: CUR.blog.excerpt, mainEntityOfPage: url, author: { "@id": B + "/#doctor" }, publisher: { "@id": B + "/#clinic" }, image: B + mu(c, "photo"), inLanguage: "en-IN", dateModified: CUR.blog.date || undefined, datePublished: CUR.blog.date || undefined });
   return '<script type="application/ld+json">' + JSON.stringify({ "@context": "https://schema.org", "@graph": g }).replace(/</g, "\\u003c") + "</script>";
 }
@@ -102,6 +103,16 @@ const META = {
   "/contact/": ["Contact & Book Appointment | Orthopedic Clinic Vijayanagar, Mysore", "Dr. Arun's Ortho & Sports Injury Clinic, Kalidasa Road, Vijayanagar 1st Stage, Mysuru 570017. Call, WhatsApp or book an appointment. Mon–Sat."],
   "/ar-seva-foundation/": ["AR Seva Foundation | Orthopedic Care for All in Mysore", "AR Seva Foundation by Dr. Arun GR makes orthopedic care reachable for people in Mysuru who need support. Learn how to get help or contribute."]
 };
+function faqs(c) {
+  const a = String(c.contact.address).replace(/\n/g, ", ");
+  return [
+    [`Where is ${c.site.clinic} in Mysore?`, `${c.site.clinic} is at ${a}.`],
+    [`What are the clinic hours?`, String(c.contact.hours).replace(/\n/g, ". ") + "."],
+    [`What treatments does Dr. Arun GR offer?`, "Treatments include " + c.services.map((x) => x.t).join(", ") + "."],
+    [`How do I book an appointment with Dr. Arun GR?`, `Call or WhatsApp ${c.contact.phone}, or use the Book an Appointment button on this website.`],
+    [`What are Dr. Arun GR's qualifications?`, (c.surgeon.credentials || []).join("; ") + "."]
+  ];
+}
 export function paths(c) { return ["/", "/about/", "/services/", "/blogs/", "/contact/", "/ar-seva-foundation/"].concat(c.blogs.map((b) => "/" + b.slug + "/")); }
 export function page(c, v, path) {
   CUR = { path, blog: c.blogs.find((x) => "/" + x.slug + "/" === path) || null };
@@ -112,7 +123,7 @@ export function page(c, v, path) {
   if (path === "/about/") return inner(c, v, "About Us", [[null, "About"]], c.pages.about + "<h2>Credentials</h2>" + li(c.surgeon.credentials) + "<h2>Core values</h2>" + c.values.map((x) => `<p><strong>${esc(x.t)}:</strong> ${esc(x.d)}</p>`).join(""), "Fellowship-trained orthopaedic care in " + c.site.city + ".", NAVSIDE);
   if (path === "/services/") return inner(c, v, "Our Services", [[null, "Services"]], "<h2>All your ortho needs at one place</h2>" + c.services.map((s) => `<h2>${esc(s.t)}</h2><p>${esc(s.d)}</p>`).join("") + "<h2>Not sure what you need?</h2><p>Call us, book an appointment, or walk into the clinic for a closer look and a treatment recommendation.</p>", "All your ortho needs at one place.", NAVSIDE);
   if (path === "/blogs/") return inner(c, v, "Blogs", [[null, "Blogs"]], `<div class="cards2" style="grid-template-columns:1fr 1fr">${c.blogs.map((b) => `<a href="/${esc(b.slug)}/"><small>${esc(b.category)}</small><br><strong>${esc(b.title)}</strong><br>${esc(b.excerpt)}</a>`).join("")}</div>`, "Articles and patient education.", NAVSIDE);
-  if (path === "/contact/") return inner(c, v, "Contact Us", [[null, "Contact"]], `<h2>${esc(c.site.clinic)}</h2><p>${br(c.contact.address)}</p><h2>Hours</h2><p>${br(c.contact.hours)}</p><h2>Call or message</h2><p>Phone: ${A("tel:" + tel, esc(c.contact.phone))}<br>WhatsApp: ${A("https://wa.me/" + esc(c.contact.whatsapp), "Chat on WhatsApp", ' target="_blank" rel="noopener"')}<br>Email: ${A("mailto:" + esc(c.contact.email), esc(c.contact.email))}<br>Instagram: ${A(esc(c.contact.instagram), "Instagram", ' target="_blank" rel="noopener"')}</p><p>Reserve a time slot, then walk in at that time for prioritized treatment at no extra cost.</p><h2>Find us</h2><p>${A("https://www.google.com/maps/search/?api=1&amp;query=" + encodeURIComponent(c.contact.address.replace(/\n/g, ", ")), "Open in Google Maps", ' target="_blank" rel="noopener"')}</p>`, "We are open Monday to Saturday, closed on Sunday.", NAVSIDE);
+  if (path === "/contact/") return inner(c, v, "Contact Us", [[null, "Contact"]], `<h2>${esc(c.site.clinic)}</h2><p>${br(c.contact.address)}</p><h2>Hours</h2><p>${br(c.contact.hours)}</p><h2>Call or message</h2><p>Phone: ${A("tel:" + tel, esc(c.contact.phone))}<br>WhatsApp: ${A("https://wa.me/" + esc(c.contact.whatsapp), "Chat on WhatsApp", ' target="_blank" rel="noopener"')}<br>Email: ${A("mailto:" + esc(c.contact.email), esc(c.contact.email))}<br>Instagram: ${A(esc(c.contact.instagram), "Instagram", ' target="_blank" rel="noopener"')}</p><p>Reserve a time slot, then walk in at that time for prioritized treatment at no extra cost.</p><h2>Find us</h2><p>${A("https://www.google.com/maps/search/?api=1&amp;query=" + encodeURIComponent(c.contact.address.replace(/\n/g, ", ")), "Open in Google Maps", ' target="_blank" rel="noopener"')}</p><h2>Frequently asked questions</h2>${faqs(c).map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join("")}`, "We are open Monday to Saturday, closed on Sunday.", NAVSIDE);
   if (path === "/ar-seva-foundation/") return inner(c, v, "AR Seva Foundation", [[null, "AR Seva Foundation"]], c.pages.seva + `<h2>Contact</h2><p>Phone / WhatsApp: ${esc(c.contact.phone)}<br>${br(c.contact.address)}</p>`, "Making orthopaedic care reachable for everyone.", NAVSIDE);
   const b = c.blogs.find((x) => "/" + x.slug + "/" === path);
   if (b) return inner(c, v, b.title, [["/blogs/", "Blogs"], [null, b.title.split(":")[0]]], b.body, b.excerpt, { title: "More reading", items: c.blogs.filter((x) => x !== b).map((x) => ["/" + x.slug + "/", x.title]).concat([["/contact/", "Contact us"]]) });
