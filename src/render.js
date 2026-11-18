@@ -82,7 +82,7 @@ export function home(c, v) {
 <section class="alt"><div class="wrap two"><div><h2>AR Seva<br><em>Foundation</em></h2><p>${esc(c.seva.text)}</p><ul class="links left">${li(c.seva.points)}</ul><p><a class="btn" href="/ar-seva-foundation/">Learn More</a></p></div>${img("AR Seva Foundation")}</div></section>
 <section class="press-sec"><div class="wrap"><h2>Our<br><em>Blog</em></h2><div class="cards two">${c.blogs.slice(0, 4).map((b) => `<div class="card"><small>${esc(b.category)}</small><h3>${A("/" + esc(b.slug) + "/", esc(b.title))}</h3></div>`).join("")}</div><p><a href="/blogs/">View all posts →</a></p></div></section>
 <section class="closing" id="appointment"><div class="wrap"><h2>Visit Dr. Arun's<br><em>Ortho &amp; Sports Injury Clinic</em></h2><p class="btns"><a class="btn" href="tel:${tel}">${ph}</a><a class="btn ghost" href="${book}">Book an Appointment</a></p><p>${esc(String(c.contact.hours).split("\n")[0])}</p></div></section>`;
-  return shell(c, v, `Orthopaedic Surgeon in ${c.site.city} | ${c.site.doctor} – Joint Replacement & Sports Injury`, `${c.site.doctor} is an orthopaedic and sports injury surgeon in ${c.site.city}. Robotic joint replacement, ACL reconstruction, arthroscopy and fracture care at ${c.site.clinic}. Call ${c.contact.phone}.`, main, { home: true });
+  return shell(c, v, `Orthopedic Surgeon in Mysore (${c.site.city}) | ${c.site.doctor}`, `${c.site.doctor} is an orthopedic and sports injury surgeon in Mysore (${c.site.city}). Robotic joint replacement, ACL reconstruction, arthroscopy and fracture care at ${c.site.clinic}. Call ${c.contact.phone}.`, main, { home: true });
 }
 
 export function inner(c, v, title, crumbs, body, lead, side) {
@@ -92,7 +92,7 @@ export function inner(c, v, title, crumbs, body, lead, side) {
   const main = `<main><section class="page-hero"><div class="wrap"><div class="crumbs">${crumb}</div><h1>${splitTwo(title)}</h1><p class="lead">${esc(lead)}</p><a class="btn" href="${book}">Book an Appointment</a></div></section>
 <section class="page-body"><div class="wrap"><div class="grid"><article>${body}</article><aside class="side">${sideBox}<div class="box"><h3>Need help?</h3><p>Call <a href="tel:${tel}">${esc(c.contact.phone)}</a> or visit us.</p><p>${br(c.contact.hours)}</p><a class="btn" href="${book}">Contact us</a></div></aside></div></div></section>
 <section class="closing2"><div class="wrap"><h2>Ready to take the next step?</h2><a class="btn" href="${book}">Book an Appointment</a></div></section></main>`;
-  return shell(c, v, `${title} | ${c.site.doctor}, ${c.site.city}`, `${lead} ${c.site.clinic}, ${c.site.city}.`.slice(0, 300), main);
+  return shell(c, v, `${title} | Orthopedic Surgeon in Mysore`, `${lead} ${c.site.clinic}, ${c.site.city}.`.slice(0, 300), main);
 }
 
 export function paths(c) { return ["/", "/about/", "/services/", "/blogs/", "/contact/", "/ar-seva-foundation/"].concat(c.blogs.map((b) => "/" + b.slug + "/")); }
