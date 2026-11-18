@@ -1,0 +1,1 @@
+(function(){var d=document.documentElement,n=navigator,c=n.connection||{};var lo=(n.deviceMemory&&n.deviceMemory<=2)||(n.hardwareConcurrency&&n.hardwareConcurrency<=2)||c.saveData||/(^|-)2g$/.test(c.effectiveType||'')||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);if(lo)d.className+=' lite'})();

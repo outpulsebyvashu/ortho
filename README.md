@@ -1,2 +1,3 @@
 # ortho
-Static dummy-content site. Deployed as Cloudflare Worker "ortho" at ortho.outpulse.company.
+Dr. Arun's clinic site. Cloudflare Worker (`src/worker.js`) renders pages from KV content, serves media from KV, admin at `/admin`.
+Secrets (not in repo): ADMIN_PASSWORD, SESSION_SECRET. KV binding: KV.
