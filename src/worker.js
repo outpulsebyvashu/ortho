@@ -17,12 +17,29 @@ async function checkPw(env, pw) {
   if (stored) { const [salt, h] = stored.split("$"); return safeEq(await pbkdf(pw, salt), h); }
   return safeEq(await hmac("x", pw), await hmac("x", env.ADMIN_PASSWORD || "\0"));
 }
-async function mkToken(env) { const exp = Date.now() + 7 * 864e5; const p = String(exp); return p + "." + (await hmac(env.SESSION_SECRET, p)); }
-async function authed(req, env) {
-  if (req.headers.get("X-Admin") !== "1") return false;
-  const m = /(?:^|;\s*)adm=([^;]+)/.exec(req.headers.get("Cookie") || ""); if (!m) return false;
-  const [p, s] = m[1].split("."); if (!p || !s || +p < Date.now()) return false;
-  return safeEq(s, await hmac(env.SESSION_SECRET, p));
+const AUTH = "https://auth.outpulse.company", SLUG = "ortho";
+const b64u = (str) => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64u = (x) => decodeURIComponent(escape(atob(x.replace(/-/g, "+").replace(/_/g, "/"))));
+async function mkSession(env, claims) { const p = b64u(JSON.stringify(claims)); return p + "." + (await hmac(env.SESSION_SECRET, p)); }
+async function readSession(req, env) {
+  const m = /(?:^|;\s*)adm=([^;]+)/.exec(req.headers.get("Cookie") || ""); if (!m) return null;
+  const [p, sig] = m[1].split("."); if (!p || !sig) return null;
+  if (!safeEq(sig, await hmac(env.SESSION_SECRET, p))) return null;
+  try { const c = JSON.parse(unb64u(p)); return c.e > Date.now() ? c : null; } catch (e) { return null; }
+}
+async function authed(req, env) { if (req.headers.get("X-Admin") !== "1") return null; return readSession(req, env); }
+const cookieHdr = (v, age) => `adm=${v}; Path=/; Max-Age=${age}; HttpOnly; Secure; SameSite=Lax`;
+
+async function ssoCallback(req, env, url) {
+  if (!env.AUTH_SITE_SECRET) return new Response("Single sign-on is not configured", { status: 503 });
+  const code = url.searchParams.get("code"); if (!code) return new Response("Missing code", { status: 400 });
+  const r = await fetch(AUTH + "/v1/token", { method: "POST", headers: { "x-site": SLUG, "x-site-secret": env.AUTH_SITE_SECRET, "content-type": "application/json" }, body: JSON.stringify({ code, redirect_uri: url.origin + "/auth/callback" }) });
+  if (!r.ok) return new Response("Login failed", { status: 401, headers: { "Cache-Control": "no-store" } });
+  const t = await r.json();
+  if (!t || !t.login || !/^(admin|editor|viewer)$/.test(t.role)) return new Response("Login failed", { status: 401 });
+  const e = Math.min(+t.access_expires_at * 1000 || 0, Date.now() + 12 * 36e5);
+  if (!(e > Date.now())) return new Response("Access expired", { status: 403 });
+  return new Response(null, { status: 302, headers: { Location: "/admin", "Cache-Control": "no-store", "Set-Cookie": cookieHdr(await mkSession(env, { l: t.login, r: t.role, e }), Math.floor((e - Date.now()) / 1000)) } });
 }
 
 async function getContent(env) {
@@ -54,10 +71,12 @@ async function admin(req, env, url, ctx) {
     await new Promise((r) => setTimeout(r, 400));
     const b = await req.json().catch(() => ({}));
     if (!b.password || !(await checkPw(env, String(b.password)))) return json({ error: "Wrong password" }, 401);
-    return json({ ok: true }, 200, { "Set-Cookie": `adm=${await mkToken(env)}; Path=/; Max-Age=604800; HttpOnly; Secure; SameSite=Strict` });
+    return json({ ok: true }, 200, { "Set-Cookie": cookieHdr(await mkSession(env, { l: "password", r: "admin", e: Date.now() + 7 * 864e5 }), 604800) });
   }
-  if (!(await authed(req, env))) return json({ error: "Signed out" }, 401);
-  if (p === "logout") return json({ ok: true }, 200, { "Set-Cookie": "adm=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict" });
+  const sess = await authed(req, env); if (!sess) return json({ error: "Signed out" }, 401);
+  if (sess.r === "viewer" && m !== "GET" && p !== "logout") return json({ error: "View-only access" }, 403);
+  if (p === "me") return json({ login: sess.l, role: sess.r });
+  if (p === "logout") return json({ ok: true }, 200, { "Set-Cookie": cookieHdr("", 0) });
   if (p === "content" && m === "GET") { await ensureSeed(env, ctx); const raw = await env.KV.get("content"); let c = DEFAULTS; if (raw) { try { const x = JSON.parse(raw); c = { ...DEFAULTS, ...x, media: { ...DEFAULTS.media, ...(x.media || {}) } }; } catch (e) {} } return json({ content: c }); }
   if (p === "content" && m === "PUT") {
     const c = await req.json().catch(() => null);
@@ -123,6 +142,8 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url), path = url.pathname, v = env.ASSET_V || "1";
     if (path.startsWith("/admin/api/")) return admin(req, env, url, ctx);
+    if (path === "/auth/callback") return ssoCallback(req, env, url);
+    if ((path === "/admin" || path === "/admin/") && env.AUTH_SITE_SECRET && !url.searchParams.has("pw") && !(await readSession(req, env))) return new Response(null, { status: 302, headers: { Location: AUTH + "/authorize?site=" + SLUG, "Cache-Control": "no-store" } });
     if (path === "/admin" || path === "/admin/") return new Response(ADMIN_HTML, { headers: { "Content-Type": "text/html;charset=utf-8", "Cache-Control": "no-store", "X-Robots-Tag": "noindex", ...SEC } });
     if (/^\/google[a-f0-9]+\.html$/.test(path)) { const r = await env.ASSETS.fetch(new Request(url.origin + path)); return new Response(r.body, { status: r.status, headers: { "Content-Type": "text/html;charset=utf-8", "Cache-Control": "public, max-age=3600" } }); }
     if (path === "/robots.txt") { const c = await getContent(env); const B = String(c.site.url || url.origin).replace(/\/$/, ""); return new Response(c.site.noindex ? "User-agent: *\nDisallow: /\n" : `User-agent: *\nAllow: /\nDisallow: /admin\n\nSitemap: ${B}/sitemap.xml\n`, { headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=3600" } }); }

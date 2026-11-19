@@ -31,7 +31,7 @@ function showLogin(){dirty=false;root.innerHTML='';var err=h('p',{class:'hint',r
  var pw=h('input',{type:'password',id:'pw',autocomplete:'current-password',required:true});
  var f=h('form',{class:'stack',onsubmit:function(e){e.preventDefault();err.textContent='';var b=$('button',f);b.disabled=true;b.textContent='Signing in…';api('POST','login',{password:pw.value}).then(load).catch(function(x){err.textContent=x.message;b.disabled=false;b.textContent='Sign in'})}},[
  h('div',{class:'field'},[h('label',{for:'pw'},['Password']),pw]),err,h('button',{class:'btn p',type:'submit'},['Sign in'])]);
- root.appendChild(h('div',{class:'login'},[h('div',{class:'card'},[h('div',{class:'brand'},[h('i',null,['A']),'Site admin']),h('p',{class:'sub'},['Sign in to edit the clinic website.']),f])]));pw.focus()}
+ root.appendChild(h('div',{class:'login'},[h('div',{class:'card'},[h('div',{class:'brand'},[h('i',null,['A']),'Site admin']),h('p',{class:'sub'},['Sign in to edit the clinic website.']),f,h('p',{class:'hint',style:'margin:16px 0 0'},[h('a',{href:'/admin'},['Sign in with Outpulse'])])])]));pw.focus()}
 function load(){return Promise.all([api('GET','content'),api('GET','media')]).then(function(r){C=r[0].content;MEDIA=r[1].items;dirty=false;render()})}
 function render(){root.innerHTML='';
  var nav=h('nav',{class:'nav','aria-label':'Sections'});TABS.forEach(function(t){var b=h('button',{type:'button','aria-current':tab===t[0]?'page':false,onclick:function(){go(t[0])}},[]);b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[t[0]]+'</svg>';b.appendChild(document.createTextNode(t[1]));nav.appendChild(b)});
